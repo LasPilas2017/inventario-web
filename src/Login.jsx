@@ -1,9 +1,10 @@
+
 import { useState } from "react";
 
 const usuarios = [
   { nombre: "ErickF", password: "Tuncaj2017!", rol: "escritura" },
-  { nombre: "JoseSup", password: "Tuncaj2017!", rol: "escritura" },
-  { nombre: "AngieC", password: "Tuncaj2017!", rol: "escritura" },
+  { nombre: "JoseSup", password: "Tuncaj2017!", rol: "lectura" },
+  { nombre: "AngieC", password: "Tuncaj2017!", rol: "lectura" },
   { nombre: "admin", password: "admin", rol: "lectura" },
 ];
 
@@ -12,14 +13,26 @@ export default function Login({ onLogin }) {
   const [password, setPassword] = useState("");
 
   const manejarLogin = () => {
+    if (!nombre || !password) {
+      alert("Por favor completa ambos campos.");
+      return;
+    }
+
     const usuario = usuarios.find(
-      (u) => u.nombre === nombre && u.password === password
+      (u) =>
+        u.nombre.toLowerCase() === nombre.toLowerCase() &&
+        u.password === password
     );
+
     if (usuario) {
       onLogin(usuario);
     } else {
       alert("Usuario o contraseña incorrectos.");
     }
+  };
+
+  const manejarKeyPress = (e) => {
+    if (e.key === "Enter") manejarLogin();
   };
 
   return (
@@ -43,6 +56,7 @@ export default function Login({ onLogin }) {
           className="w-full p-2 mb-3 border rounded"
           value={nombre}
           onChange={(e) => setNombre(e.target.value)}
+          onKeyDown={manejarKeyPress}
         />
         <input
           type="password"
@@ -50,6 +64,7 @@ export default function Login({ onLogin }) {
           className="w-full p-2 mb-4 border rounded"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          onKeyDown={manejarKeyPress}
         />
         <button
           onClick={manejarLogin}
