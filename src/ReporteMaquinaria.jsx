@@ -84,10 +84,41 @@ export default function ReporteMaquinaria() {
   };
 
   return (
-    <div className="px-4">
-      {vista === "menu" && (
-        <>
-          <h2 className="text-xl font-bold mb-4 flex items-center gap-2">📋 Maquinaria Registrada</h2>
+   <div className="px-4">
+  {vista === "menu" && (
+    <>
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
+        <h2 className="text-2xl font-semibold text-gray-800 flex items-center gap-2">
+          📋 Maquinaria Registrada
+        </h2>
+
+        <div className="flex gap-3">
+          <button
+            onClick={() => setVista("ingreso")}
+            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow-md transition"
+          >
+            <span className="text-lg">➕</span> Agregar Máquina
+          </button>
+<div className="flex justify-between items-center mb-4"></div>
+          {vista !== "insumos" ? (
+            <button
+              onClick={() => setVista("insumos")}
+              className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg shadow-md transition"
+            >
+              Ver Insumos
+            </button>
+          ) : (
+            <button
+              onClick={() => setVista("menu")}
+              className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg shadow-md transition"
+            >
+              Volver
+            </button>
+          
+          )}
+        </div>
+      </div>
+
           <div className="flex flex-col gap-6 items-center">
             {maquinarias.map((m) => {
               const expandida = maquinariaSeleccionada?.id === m.id;
@@ -240,24 +271,8 @@ export default function ReporteMaquinaria() {
           </div>
         </>
       )}
-        <div className="flex justify-between items-center mb-4">
-        {vista !== "insumos" ? (
-                <button
-                    onClick={() => setVista("insumos")}
-                    className="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition"
-                >
-                    Ver Insumos
-                </button>
-                ) : (
-                <button
-                    onClick={() => setVista("menu")}
-                    className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition"
-                >
-                    Volver
-                </button>
-                )}
 
-        </div>
+        
       {vista === "ingreso" && <IngresoMaquinaria volver={() => setVista("menu")} />}
       {vista === "insumos" && <InventariodeInsumos volver={() => setVista("menu")} />}
     </div>

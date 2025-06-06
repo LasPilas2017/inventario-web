@@ -209,19 +209,49 @@ const verDetalle = async (item) => {
 
 
   return (
-    <div className="relative bg-white p-6 rounded-xl shadow-xl max-w-6xl w-full mx-auto mt-8">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold">Inventario de Insumos</h2>
-        {vista === "tabla" && (
-          <div className="flex gap-2">
-            <button onClick={() => setVista("entrega")} className="bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700">Entrega de Artículo</button>
-            <button onClick={() => setVista("formulario")} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Ingresar Artículo</button>
-          </div>
-        )}
-        {vista !== "tabla" && (
-          <button onClick={() => { setVista("tabla"); setArticuloSeleccionado(null); }} className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Regresar</button>
-        )}
-      </div>
+  <div className="relative bg-white p-6 rounded-xl shadow-xl max-w-6xl w-full mx-auto mt-8">
+
+    {/* Botón para volver al menú principal */}
+    <div className="mb-6">
+      <button
+        onClick={volver}
+        className="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded-lg shadow transition"
+      >
+        ← Volver al menú
+      </button>
+    </div>
+
+    {/* Encabezado y acciones */}
+    <div className="flex justify-between items-center mb-4">
+      <h2 className="text-xl font-bold">Inventario de Insumos</h2>
+      {vista === "tabla" ? (
+        <div className="flex gap-2">
+          <button
+            onClick={() => setVista("entrega")}
+            className="bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700"
+          >
+            Entrega de Artículo
+          </button>
+          <button
+            onClick={() => setVista("formulario")}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          >
+            Ingresar Artículo
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={() => {
+            setVista("tabla");
+            setArticuloSeleccionado(null);
+          }}
+          className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+        >
+          Regresar
+        </button>
+      )}
+    </div>
+
 
       {vista === "tabla" && (
         <div className="overflow-x-auto">

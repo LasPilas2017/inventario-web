@@ -19,7 +19,7 @@ function App() {
   const [detalleMaterial, setDetalleMaterial] = useState(null); // Material seleccionado para ver detalle
   const [historialFiltrado, setHistorialFiltrado] = useState([]); // Historial filtrado por material
   const [combinerSeleccionado, setCombinerSeleccionado] = useState(null);
-
+  const [filtroInventario, setFiltroInventario] = useState("");
   //const pestanasPermitidas = ["inventario", "ingresos", "salidas", "historial", "verificacion"];
   const [verificaciones, setVerificaciones] = useState([]);
   const [fechaSeleccionada, setFechaSeleccionada] = useState("");
@@ -570,13 +570,24 @@ const descargarVerificacionPDF = () => {
          {/* tabla del inventario*/}
           {tab === "inventario" && (
   <div>
-    <h2 className="text-xl font-semibold mb-4">📋 Tabla de Inventario</h2>
     <button
       onClick={descargarPDF}
       className="mb-4 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
     >
-      📄 Descargar PDF
+      📄 Descargar Inventario Actual
     </button>
+    {/*filtro para el inventario*/}
+   <h2
+    className="text-xl font-semibold mb-4 text-center">📋 Inventario Las Pilas </h2>
+        <input
+          type="text"
+          placeholder="🔍 Buscar en inventario..."
+          className="mb-4 px-4 py-2 border rounded w-full"
+          value={filtroInventario}
+          onChange={(e) => setFiltroInventario(e.target.value.toLowerCase())}
+        />
+
+    
     {materiales.length === 0 ? (
       <p className="text-gray-500 italic">Aún no hay materiales ingresados.</p>
     ) : (
@@ -590,7 +601,13 @@ const descargarVerificacionPDF = () => {
           </tr>
         </thead>
         <tbody>
-          {materiales.map((item, i) => (
+          {materiales
+              .filter((item) =>
+                item.nombre.toLowerCase().includes(filtroInventario) ||
+                item.descripcion?.toLowerCase().includes(filtroInventario) ||
+                item.ubicacion?.toLowerCase().includes(filtroInventario)
+              )
+              .map((item, i) => (
             <tr key={i} className="border-t hover:bg-gray-100 cursor-pointer" onClick={() => {
               setDetalleMaterial(item);
               const filtrado = historial.filter(h => normalizarNombre(h.nombre) === normalizarNombre(item.nombre));
