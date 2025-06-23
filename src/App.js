@@ -5,7 +5,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import React from "react";
 import ReporteMaquinaria from "./ReporteMaquinaria";
-
+import { FiDownload } from "react-icons/fi";
 
 function App() {
   // Estados de la aplicación
@@ -153,6 +153,47 @@ useEffect(() => {
 
   cargarCambios();
 }, [combinerSeleccionado]);
+
+const exportarPDF = () => {
+  const doc = new jsPDF();
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const titulo = "Registro y localización de strings";
+
+  doc.setFontSize(18);
+  const textWidth = doc.getTextWidth(titulo);
+  const x = (pageWidth - textWidth) / 2;
+  doc.text(titulo, x, 20);
+
+  const columnas = ["Planta", "Combiner", "String", "Fila", "Mesa", "Paneles", "Potencia(W)"];
+  const filas = stringsRegistrados
+    .filter(s =>
+      (!filtroPlanta || s.planta === filtroPlanta) &&
+      (!filtroCombiner || s.combiner === filtroCombiner)
+    )
+    .map(s => [s.planta, s.combiner, s.numero, s.fila, s.mesa, s.paneles, s.potencia]);
+
+  autoTable(doc, {
+    head: [columnas],
+    body: filas,
+    startY: 30,
+    theme: "grid",
+    styles: {
+      lineWidth: 0.5, // 👈 Aquí se marca el grosor de las líneas
+      lineColor: [0, 0, 0], // Negro puro
+      halign: "center",
+    },
+    headStyles: {
+      fillColor: [255, 255, 255],
+      textColor: [0, 0, 0],
+      fontStyle: "bold",
+      halign: "center"
+    },
+    margin: { top: 10 }
+  });
+
+  doc.save("registro_strings.pdf");
+};
+
 
 
    // para descargar el pdf de la tabla de verificacion
@@ -1382,6 +1423,16 @@ const guardarStrings = async () => {
       </div>
 
       <div className="overflow-x-auto max-h-[400px] overflow-y-scroll">
+        <div className="flex justify-end mb-4">
+           <button
+            onClick={exportarPDF}
+            className="text-blue-600 hover:text-blue-800 text-2xl"
+            title="Descargar PDF"
+          >
+            <FiDownload />
+          </button>
+        </div>
+
         <table className="min-w-full table-auto border border-gray-300">
           <thead className="bg-gray-200">
             <tr>
@@ -1391,7 +1442,7 @@ const guardarStrings = async () => {
               <th className="border p-2">Fila origen</th>
               <th className="border p-2">Mesa</th>
               <th className="border p-2">Paneles</th>
-              <th className="border p-2">Potencia</th>
+              <th className="border p-2">Potencia(W)</th>
             </tr>
           </thead>
           <tbody>
