@@ -6,6 +6,7 @@ import autoTable from "jspdf-autotable";
 import React from "react";
 import ReporteMaquinaria from "./ReporteMaquinaria";
 
+
 function App() {
   // Estados de la aplicación
   const [usuario, setUsuario] = useState(null); // Usuario logueado
@@ -33,6 +34,50 @@ function App() {
   const imagenMaterial = historialFiltrado.find((h) => h.foto_url)?.foto_url || null;
   const [filtroVerifPlanta, setFiltroVerifPlanta] = useState("");
   const [filtroVerifCombiner, setFiltroVerifCombiner] = useState("");
+  const [filtroPlanta, setFiltroPlanta] = useState("");
+  const [filtroCombiner, setFiltroCombiner] = useState("");
+  const [stringsRegistrados, setStringsRegistrados] = useState([]);
+
+useEffect(() => {
+  const obtenerStringsRegistrados = async () => {
+    const { data, error } = await supabase.from("registro_strings").select("*");
+
+    if (error) {
+      console.error("Error al cargar datos:", error);
+    } else {
+      setStringsRegistrados(data);
+    }
+  };
+
+  obtenerStringsRegistrados();
+}, []);
+
+
+  useEffect(() => {
+  const obtenerDatos = async () => {
+    const { data, error } = await supabase.from("registro_strings").select("*");
+    if (error) {
+      console.error("Error cargando datos:", error);
+    } else {
+      setStringsRegistrados(data);
+    }
+  };
+  obtenerDatos();
+}, []);
+
+
+useEffect(() => {
+  const cargarStrings = async () => {
+    const { data, error } = await supabase.from("registro_strings").select("*");
+    if (error) {
+      console.error("Error al cargar strings:", error);
+    } else {
+      setStringsRegistrados(data);
+    }
+  };
+
+  cargarStrings();
+}, []);
 
 
     useEffect(() => {
@@ -52,6 +97,12 @@ function App() {
   cargarCambios();
 }, [combinerSeleccionado]);
 
+  const [form, setForm] = useState({
+    planta: "",
+    combiner: "",
+    potencia: "",
+    strings: [{ numero: "", fila: "", mesa: "" }]
+  });
 
 // formulario para guardar los datos de la página paneles y combiner
 const guardarDatosCombiner = async () => {
@@ -62,7 +113,7 @@ const guardarDatosCombiner = async () => {
     return;
   }
 
-  const { error } = await supabase.from("combiner_info").insert([
+  const { error } = await supabase.from("registro_strings").insert([
     {
       planta,
       combiner,
@@ -136,10 +187,10 @@ const descargarVerificacionPDF = () => {
   useEffect(() => {
   const cargarCombiners = async () => {
     const { data, error } = await supabase
-      .from("combiner_info")
+      .from("registro_strings")
       .select("*")
-      .order("planta", { ascending: true })      // ordena por planta
-      .order("combiner", { ascending: true });   // luego por combiner (A1, A2...)
+      .order("planta", { ascending: true })      
+      .order("combiner", { ascending: true });   
     if (!error) {
       setCombinerList(data);
     }
@@ -173,7 +224,47 @@ const descargarVerificacionPDF = () => {
   mesas: "",
   paneles: 0
 });
-    
+
+const guardarStrings = async () => {
+  if (!form.planta || !form.combiner || !form.potencia) {
+    alert("Por favor, completa todos los campos antes de guardar.");
+    return;
+  }
+
+  const registros = form.strings.map((s) => ({
+    planta: form.planta,
+    combiner: form.combiner,
+    potencia: parseInt(form.potencia),
+    numero: s.numero,
+    fila: s.fila,
+    mesa: s.mesa,
+    paneles: 28,
+  }));
+
+  const { error } = await supabase.from("registro_strings").insert(registros);
+  if (error) {
+    console.error("Error al guardar:", error);
+  } else {
+    alert("Datos guardados correctamente.");
+
+    // Limpiar formulario
+    setForm({
+      planta: "",
+      combiner: "",
+      potencia: "",
+      strings: [],
+    });
+
+    // Recargar registros
+    const { data, error: errorFetch } = await supabase.from("registro_strings").select("*");
+    if (errorFetch) console.error("Error al recargar:", errorFetch);
+    else setStringsRegistrados(data);
+  }
+};
+
+
+
+
   // Cierra sesión
   const cerrarSesion = () => setUsuario(null);
 
@@ -1122,337 +1213,211 @@ const descargarVerificacionPDF = () => {
     No tienes permisos para ingresar verificaciones.
   </p>
 )}
-{/* Fragmento de código para formulario Paneles y Combiner */} 
+
 {tab === "paneles" && (
   <div>
-    <h2 className="text-xl font-bold mb-4">☀️ Paneles y Combiner</h2>
+    <h2 className="text-xl font-bold mb-4 text-center">☀️ Registro de Strings por Combiner</h2>
 
-    {/* Solo para usuarios con permiso de escritura */}
-    {usuario.rol === "escritura" && (
-      <form className="grid gap-4 max-w-xl mx-auto bg-white p-4 rounded shadow">
-        <label className="block">
-          <span className="block font-semibold mb-1">Selecciona Planta</span>
-          <select
-            className="w-full p-2 border rounded"
-            value={formCombiner.planta}
-            onChange={(e) =>
-              setFormCombiner({ ...formCombiner, planta: e.target.value })
-            }
-          >
-            <option value="">Selecciona una planta</option>
-            <option value="Las Pilas 1">Las Pilas 1</option>
-            <option value="Las Pilas 2">Las Pilas 2</option>
-          </select>
-        </label>
-
-        <label className="block">
-          <span className="block font-semibold mb-1">Selecciona Combiner</span>
-          <select
-            className="w-full p-2 border rounded"
-            value={formCombiner.combiner}
-            onChange={(e) =>
-              setFormCombiner({ ...formCombiner, combiner: e.target.value })
-            }
-            disabled={!formCombiner.planta}
-          >
-            <option value="">Selecciona</option>
-            {formCombiner.planta &&
-              [...Array(14).keys()].map(i => {
-                const prefijo = formCombiner.planta === "Las Pilas 1" ? "A" : "B";
-                return (
-                  <option key={`${prefijo}${i + 1}`} value={`${prefijo}${i + 1}`}>
-                    {`${prefijo}${i + 1}`}
-                  </option>
-                );
-              })}
-          </select>
-        </label>
-
-        <label className="block">
-          <span className="block font-semibold mb-1">Cantidad de Strings (máx 18)</span>
-          <input
-            type="number"
-            min={1}
-            max={18}
-            className="w-full p-2 border rounded"
-            value={formCombiner.strings}
-            onChange={(e) =>
-              setFormCombiner({ ...formCombiner, strings: e.target.value })
-            }
-          />
-        </label>
-
-        <label className="block">
-          <span className="block font-semibold mb-1">Potencia de los Paneles (W)</span>
-          <input
-            type="number"
-            className="w-full p-2 border rounded"
-            value={formCombiner.potencia}
-            onChange={(e) =>
-              setFormCombiner({ ...formCombiner, potencia: e.target.value })
-            }
-          />
-        </label>
-
-        <label className="block">
-          <span className="block font-semibold mb-1">Cantidad de Mesas</span>
-          <input
-            type="number"
-            className="w-full p-2 border rounded"
-            value={formCombiner.mesas}
-            onChange={(e) => {
-              const mesas = parseInt(e.target.value);
-              setFormCombiner({
-                ...formCombiner,
-                mesas,
-                paneles: mesas * 56
-              });
-            }}
-          />
-        </label>
-
-        <div className="font-semibold text-green-700">
-          Total de paneles: {formCombiner.paneles || 0}
-        </div>
-
-        <button
-          type="button"
-          className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
-          onClick={guardarDatosCombiner}
-        >
-          Guardar datos del Combiner
-        </button>
-      </form>
-    )}
-
-    {/* Tabla siempre visible */}
-{combinerList.length > 0 && (
-  <div className="mt-8">
-    <h3 className="text-lg font-semibold mb-2">🔍 Combiners registrados</h3>
-
-    {/* Filtros de búsqueda */}
-    <div className="flex flex-wrap items-center gap-4 mb-4">
-      {/* Filtro por planta */}
+    {/* Formulario de ingreso */}
+    <div className="bg-white p-4 rounded shadow max-w-4xl mx-auto grid gap-4 mb-10">
+      <label className="font-semibold">Planta</label>
       <select
-        className="p-2 border rounded"
-        value={filtroPlanta}
-        onChange={(e) => setFiltroPlanta(e.target.value)}
+        className="p-2 border rounded text-center"
+        value={form.planta}
+        onChange={(e) => setForm({ ...form, planta: e.target.value })}
       >
-        <option value="">Todas las plantas</option>
+        <option value="">Selecciona Planta</option>
         <option value="Las Pilas 1">Las Pilas 1</option>
         <option value="Las Pilas 2">Las Pilas 2</option>
       </select>
 
-      {/* Filtro por combiner */}
+      <label className="font-semibold">Combiner</label>
       <select
-        className="p-2 border rounded"
-        value={filtroCombiner}
-        onChange={(e) => setFiltroCombiner(e.target.value)}
+        className="p-2 border rounded text-center"
+        value={form.combiner}
+        onChange={(e) => setForm({ ...form, combiner: e.target.value })}
+        disabled={!form.planta}
       >
-        <option value="">Todos los combiners</option>
-        {[...Array(14).keys()].map(i => (
-          <React.Fragment key={i}>
-            <option value={`A${i + 1}`}>{`A${i + 1}`}</option>
-            <option value={`B${i + 1}`}>{`B${i + 1}`}</option>
-          </React.Fragment>
-        ))}
+        <option value="">Selecciona Combiner</option>
+        {[...Array(14).keys()].map(i => {
+          const prefijo = form.planta === "Las Pilas 1" ? "A" : "B";
+          return (
+            <option key={i} value={`${prefijo}${i + 1}`}>
+              {`${prefijo}${i + 1}`}
+            </option>
+          );
+        })}
       </select>
 
-      {/* Botón para limpiar filtros */}
+      <input
+        type="number"
+        className="p-2 border rounded text-center"
+        placeholder="Potencia de los paneles (W)"
+        value={form.potencia}
+        onChange={(e) => setForm({ ...form, potencia: e.target.value })}
+      />
+
+      {/* Etiquetas arriba de los campos solo en el primero */}
+      {form.strings.map((s, idx) => (
+        <div key={idx} className="grid grid-cols-5 gap-2 items-center">
+          {idx === 0 && (
+            <>
+              <label className="col-span-1 text-center font-medium">String</label>
+              <label className="col-span-1 text-center font-medium">Fila origen</label>
+              <label className="col-span-1 text-center font-medium">Mesa</label>
+              <span className="col-span-1"></span>
+              <span className="col-span-1"></span>
+            </>
+          )}
+
+          <select
+            className="p-2 border rounded text-center"
+            value={s.numero}
+            onChange={(e) => {
+              const updated = [...form.strings];
+              updated[idx].numero = parseInt(e.target.value);
+              setForm({ ...form, strings: updated });
+            }}
+          >
+            <option value="">String</option>
+            {[...Array(18).keys()].map(i => (
+              <option key={i} value={i + 1}>{i + 1}</option>
+            ))}
+          </select>
+
+          <input
+            className="p-2 border rounded text-center"
+            placeholder="Fila origen"
+            value={s.fila}
+            onChange={(e) => {
+              const updated = [...form.strings];
+              updated[idx].fila = e.target.value;
+              setForm({ ...form, strings: updated });
+            }}
+          />
+
+          <select
+            className="p-2 border rounded text-center"
+            value={s.mesa}
+            onChange={(e) => {
+              const updated = [...form.strings];
+              updated[idx].mesa = e.target.value;
+              setForm({ ...form, strings: updated });
+            }}
+          >
+            <option value="">Mesa</option>
+            {[...Array(8).keys()].map(i => (
+              <option key={i} value={i + 1}>{i + 1}</option>
+            ))}
+          </select>
+
+          <span className="text-gray-600 text-center">→ 28 paneles</span>
+
+          <button
+            type="button"
+            onClick={() => {
+              const updated = [...form.strings];
+              updated.splice(idx, 1);
+              setForm({ ...form, strings: updated });
+            }}
+            className="text-red-500 hover:text-red-700 text-lg"
+            title="Quitar"
+          >
+            ❌
+          </button>
+        </div>
+      ))}
+
       <button
-        className="bg-gray-300 text-black px-4 py-2 rounded hover:bg-gray-400"
-        onClick={() => {
-          setFiltroPlanta("");
-          setFiltroCombiner("");
-        }}
+        type="button"
+        onClick={() =>
+          setForm({
+            ...form,
+            strings: [...form.strings, { numero: "", fila: "", mesa: "" }]
+          })
+        }
+        className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 w-full text-center"
       >
-        Limpiar filtros
+        ➕ Agregar String
+      </button>
+
+      <div className="font-semibold text-blue-700 text-center">
+        Total de paneles: {form.strings.length * 28}
+      </div>
+
+      <button
+        onClick={guardarStrings}
+        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-full"
+      >
+        Guardar datos del Combiner
       </button>
     </div>
 
-    {/* Tabla filtrada */}
-    <table className="w-full text-sm text-left border border-gray-300">
-      <thead className="bg-gray-200">
-        <tr>
-          <th className="px-4 py-2">Planta</th>
-          <th className="px-4 py-2">Combiner</th>
-          <th className="px-4 py-2">Strings</th>
-          <th className="px-4 py-2">Potencia</th>
-          <th className="px-4 py-2">Mesas</th>
-          <th className="px-4 py-2">Paneles</th>
-          <th className="px-4 py-2">Acción</th>
-        </tr>
-      </thead>
-      <tbody>
-        {combinerList
-          .filter(c =>
-            (filtroPlanta ? c.planta === filtroPlanta : true) &&
-            (filtroCombiner ? c.combiner === filtroCombiner : true)
-          )
-          .map((c, index) => (
-            <React.Fragment key={index}>
-              <tr className="border-t hover:bg-gray-100">
-                <td className="px-4 py-2">{c.planta}</td>
-                <td className="px-4 py-2">{c.combiner}</td>
-                <td className="px-4 py-2">{c.strings}</td>
-                <td className="px-4 py-2">{c.potencia}</td>
-                <td className="px-4 py-2">{c.mesas}</td>
-                <td className="px-4 py-2">{c.paneles}</td>
-                <td className="px-4 py-2">
-                  <button
-                    className="bg-blue-500 text-white px-3 py-1 rounded"
-                    onClick={() =>
-                      setCombinerExpandido(c.combiner === combinerExpandido ? null : c.combiner)
-                    }
-                  >
-                    {combinerExpandido === c.combiner ? "Ocultar" : "Ver Detalles"}
-                  </button>
-                </td>
-              </tr>
-
-              {/* Historial visible al hacer clic */}
-              {combinerExpandido === c.combiner && (
-                <tr>
-                  <td colSpan={7} className="p-4 bg-gray-50 border-t">
-                    <h4 className="font-semibold mb-2">📋 Cambios registrados para {c.combiner}</h4>
-
-                    {cambiosPanel.length === 0 ? (
-                      <p className="italic text-gray-500">No hay registros para este combiner.</p>
-                    ) : (
-                      <table className="w-full text-sm border border-gray-300">
-                        <thead className="bg-gray-200">
-                          <tr>
-                            <th className="px-3 py-2">Fecha</th>
-                            <th className="px-3 py-2">Mesa</th>
-                            <th className="px-3 py-2">Ubicación</th>
-                            <th className="px-3 py-2">No. Panel</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {cambiosPanel.map((item, i) => (
-                            <tr key={i} className="border-t">
-                              <td className="px-3 py-2">{new Date(item.fecha).toLocaleString()}</td>
-                              <td className="px-3 py-2">{item.mesa}</td>
-                              <td className="px-3 py-2 capitalize">{item.ubicacion}</td>
-                              <td className="px-3 py-2">{item.panel}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    )}
-                  </td>
-                </tr>
-              )}
-            </React.Fragment>
-          ))}
-      </tbody>
-    </table>
-  </div>
-)}
-
-
-
-
-        {/* Formulario de cambio de panel: solo para escritura */}
-{combinerSeleccionado && usuario.rol === "escritura" && (
-  <div className="mt-6 border-t pt-4">
-    <h3 className="text-lg font-bold mb-4">
-      🛠️ Registrar cambio de panel en {combinerSeleccionado}
-    </h3>
-    <form
-      className="grid gap-3 bg-white p-4 rounded shadow max-w-xl mx-auto"
-      onSubmit={async (e) => {
-        e.preventDefault();
-
-        const nuevaFila = {
-          combiner: combinerSeleccionado,
-          mesa: parseInt(e.target[0].value),
-          ubicacion: e.target[1].value,
-          panel: parseInt(e.target[2].value),
-          fecha: new Date().toISOString(),
-          created_at: new Date().toISOString()
-        };
-
-        const { error } = await supabase.from("cambios_panel").insert([nuevaFila]);
-
-        if (error) {
-          alert("❌ Error al guardar el cambio.");
-          console.error("SUPABASE ERROR:", error);
-        } else {
-          alert("✅ Panel actualizado correctamente para la combiner " + combinerSeleccionado);
-        }
-      }}
-    >
-      <label className="block">
-        <span className="font-semibold">No. de Mesa</span>
-        <input type="number" className="w-full border p-2 rounded" required />
-      </label>
-
-      <label className="block">
-        <span className="font-semibold">Ubicación del panel</span>
-        <select className="w-full border p-2 rounded" required>
-          <option value="">Seleccione</option>
-          <option value="superior">Superior</option>
-          <option value="inferior">Inferior</option>
+    {/* Tabla de registros */}
+    <div className="max-w-6xl mx-auto bg-white p-4 rounded shadow">
+      <div className="flex flex-col sm:flex-row gap-2 justify-center mb-4">
+        <select
+          className="p-2 border rounded"
+          value={filtroPlanta}
+          onChange={(e) => setFiltroPlanta(e.target.value)}
+        >
+          <option value="">Todas las plantas</option>
+          <option value="Las Pilas 1">Las Pilas 1</option>
+          <option value="Las Pilas 2">Las Pilas 2</option>
         </select>
-      </label>
 
-      <label className="block">
-        <span className="font-semibold">No. de Panel</span>
-        <input type="number" className="w-full border p-2 rounded" required />
-        <span className="text-xs text-gray-500 italic">
-          Conteo de derecha a izquierda
-        </span>
-      </label>
-
-      <div className="flex justify-between gap-4">
-        <button
-          type="submit"
-          className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
+        <select
+          className="p-2 border rounded"
+          value={filtroCombiner}
+          onChange={(e) => setFiltroCombiner(e.target.value)}
         >
-          Guardar cambio
-        </button>
-        <button
-          type="button"
-          className="bg-red-600 text-white py-2 px-4 rounded hover:bg-red-700"
-          onClick={() => setCombinerSeleccionado(null)}
-        >
-          Cerrar
-        </button>
+          <option value="">Todos los combiners</option>
+          {[...Array(14).keys()].map(i => (
+            <option key={i} value={`A${i + 1}`}>A{i + 1}</option>
+          ))}
+          {[...Array(14).keys()].map(i => (
+            <option key={i} value={`B${i + 1}`}>B{i + 1}</option>
+          ))}
+        </select>
       </div>
-    </form>
+
+      <div className="overflow-x-auto max-h-[400px] overflow-y-scroll">
+        <table className="min-w-full table-auto border border-gray-300">
+          <thead className="bg-gray-200">
+            <tr>
+              <th className="border p-2">Planta</th>
+              <th className="border p-2">Combiner</th>
+              <th className="border p-2">String</th>
+              <th className="border p-2">Fila origen</th>
+              <th className="border p-2">Mesa</th>
+              <th className="border p-2">Paneles</th>
+              <th className="border p-2">Potencia</th>
+            </tr>
+          </thead>
+          <tbody>
+            {stringsRegistrados
+              .filter(s =>
+                (!filtroPlanta || s.planta === filtroPlanta) &&
+                (!filtroCombiner || s.combiner === filtroCombiner)
+              )
+              .map((s, idx) => (
+                <tr key={idx}>
+                  <td className="border p-2">{s.planta}</td>
+                  <td className="border p-2">{s.combiner}</td>
+                  <td className="border p-2">{s.numero}</td>
+                  <td className="border p-2">{s.fila}</td>
+                  <td className="border p-2">{s.mesa}</td>
+                  <td className="border p-2">{s.paneles}</td>
+                  <td className="border p-2">{s.potencia}</td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 )}
 
-{/* Tabla de cambios registrada: visible para todos */}
-{combinerSeleccionado && cambiosPanel.length > 0 && (
-  <div className="mt-6 border-t pt-4">
-    <h3 className="text-lg font-bold mb-4">📋 Cambios registrados para {combinerSeleccionado}</h3>
-    <table className="w-full text-sm text-left border border-gray-300">
-      <thead className="bg-gray-200">
-        <tr>
-          <th className="px-3 py-2">Fecha</th>
-          <th className="px-3 py-2">Mesa</th>
-          <th className="px-3 py-2">Ubicación</th>
-          <th className="px-3 py-2">No. Panel</th>
-        </tr>
-      </thead>
-      <tbody>
-        {cambiosPanel.map((item, i) => (
-          <tr key={i} className="border-t">
-            <td className="px-3 py-2">{new Date(item.fecha).toLocaleString()}</td>
-            <td className="px-3 py-2">{item.mesa}</td>
-            <td className="px-3 py-2 capitalize">{item.ubicacion}</td>
-            <td className="px-3 py-2">{item.panel}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  </div>
-  
-)}      
-  </div>
-     )}
                 {/* Modal de historial por material */}
         {detalleMaterial && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
