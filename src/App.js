@@ -1280,14 +1280,14 @@ const guardarStrings = async () => {
         disabled={!form.planta}
       >
         <option value="">Selecciona Combiner</option>
-        {[...Array(14).keys()].map(i => {
-          const prefijo = form.planta === "Las Pilas 1" ? "A" : "B";
-          return (
-            <option key={i} value={`${prefijo}${i + 1}`}>
+        {["A", "B"].flatMap(prefijo =>
+          [...Array(14).keys()].map(i => (
+            <option key={`${prefijo}${i + 1}`} value={`${prefijo}${i + 1}`}>
               {`${prefijo}${i + 1}`}
             </option>
-          );
-        })}
+          ))
+        )}
+
       </select>
 
       <input
