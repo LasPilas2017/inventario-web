@@ -156,20 +156,19 @@ useEffect(() => {
 
 const exportarPDF = () => {
   const doc = new jsPDF({
-    orientation: "landscape", // ✅ Hoja en horizontal
+    orientation: "landscape",
     unit: "mm",
-    format: "a4",
+    format: "letter", // 216 x 279 mm
   });
 
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
+  const pageWidth = doc.internal.pageSize.getWidth();   // ≈ 279 mm
+  const pageHeight = doc.internal.pageSize.getHeight(); // ≈ 216 mm
   const titulo = "Registro y localización de strings";
 
-  // Título centrado horizontal
-  doc.setFontSize(18);
+  // Título centrado
+  doc.setFontSize(16);
   const textWidth = doc.getTextWidth(titulo);
-  const x = (pageWidth - textWidth) / 2;
-  doc.text(titulo, x, 20);
+  doc.text(titulo, (pageWidth - textWidth) / 2, 15);
 
   const columnas = ["Planta", "Combiner", "String", "Fila", "Mesa", "Paneles", "Potencia(W)"];
   const filas = stringsRegistrados
@@ -179,19 +178,23 @@ const exportarPDF = () => {
     )
     .map(s => [s.planta, s.combiner, s.numero, s.fila, s.mesa, s.paneles, s.potencia]);
 
-  // Usamos autoTable para centrar la tabla horizontal y verticalmente
+  // Calcular altura total de la tabla para centrarla verticalmente
+  const rowHeight = 8; // ajusta según fontSize y padding
+  const tableHeight = (filas.length + 1) * rowHeight; // +1 por la cabecera
+  const startY = Math.max((pageHeight - tableHeight) / 2, 20); // mínimo 20 para no tapar el título
+
   autoTable(doc, {
     head: [columnas],
     body: filas,
-    startY: (pageHeight - filas.length * 10) / 2, // ✅ Aproximación a centrado vertical
+    startY,
     theme: "grid",
     styles: {
-      fontSize: 10,
+      fontSize: filas.length > 25 ? 7 : 9, // ajusta para que quepa
       halign: "center",
       valign: "middle",
       lineWidth: 0.5,
       lineColor: [0, 0, 0],
-      cellPadding: 3,
+      cellPadding: 2,
     },
     headStyles: {
       fillColor: [255, 255, 255],
@@ -199,20 +202,12 @@ const exportarPDF = () => {
       fontStyle: "bold",
     },
     margin: { left: 10, right: 10 },
-    tableWidth: 'auto', // ✅ Ajusta la tabla al ancho disponible
-    didDrawPage: function (data) {
-      // Centra el título también verticalmente si la tabla es muy corta
-      if (filas.length < 5) {
-        doc.setFontSize(18);
-        doc.text(titulo, x, (pageHeight - filas.length * 10) / 2 - 10);
-      }
-    }
+    tableWidth: "auto",
+    pageBreak: "avoid", // nunca dividir en otra hoja
   });
 
   doc.save("registro_strings.pdf");
 };
-
-
 
 
    // para descargar el pdf de la tabla de verificacion
