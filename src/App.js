@@ -155,10 +155,17 @@ useEffect(() => {
 }, [combinerSeleccionado]);
 
 const exportarPDF = () => {
-  const doc = new jsPDF();
+  const doc = new jsPDF({
+    orientation: "landscape", // ✅ Hoja en horizontal
+    unit: "mm",
+    format: "a4",
+  });
+
   const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
   const titulo = "Registro y localización de strings";
 
+  // Título centrado horizontal
   doc.setFontSize(18);
   const textWidth = doc.getTextWidth(titulo);
   const x = (pageWidth - textWidth) / 2;
@@ -172,27 +179,39 @@ const exportarPDF = () => {
     )
     .map(s => [s.planta, s.combiner, s.numero, s.fila, s.mesa, s.paneles, s.potencia]);
 
+  // Usamos autoTable para centrar la tabla horizontal y verticalmente
   autoTable(doc, {
     head: [columnas],
     body: filas,
-    startY: 30,
+    startY: (pageHeight - filas.length * 10) / 2, // ✅ Aproximación a centrado vertical
     theme: "grid",
     styles: {
-      lineWidth: 0.5, // 👈 Aquí se marca el grosor de las líneas
-      lineColor: [0, 0, 0], // Negro puro
+      fontSize: 10,
       halign: "center",
+      valign: "middle",
+      lineWidth: 0.5,
+      lineColor: [0, 0, 0],
+      cellPadding: 3,
     },
     headStyles: {
       fillColor: [255, 255, 255],
       textColor: [0, 0, 0],
       fontStyle: "bold",
-      halign: "center"
     },
-    margin: { top: 10 }
+    margin: { left: 10, right: 10 },
+    tableWidth: 'auto', // ✅ Ajusta la tabla al ancho disponible
+    didDrawPage: function (data) {
+      // Centra el título también verticalmente si la tabla es muy corta
+      if (filas.length < 5) {
+        doc.setFontSize(18);
+        doc.text(titulo, x, (pageHeight - filas.length * 10) / 2 - 10);
+      }
+    }
   });
 
   doc.save("registro_strings.pdf");
 };
+
 
 
 
