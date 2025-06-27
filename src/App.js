@@ -158,17 +158,15 @@ const exportarPDF = () => {
   const doc = new jsPDF({
     orientation: "landscape",
     unit: "mm",
-    format: "letter", // 216 x 279 mm
+    format: "letter",
   });
 
-  const pageWidth = doc.internal.pageSize.getWidth();   // ≈ 279 mm
-  const pageHeight = doc.internal.pageSize.getHeight(); // ≈ 216 mm
-  const titulo = "Registro y localización de strings";
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const topMargin = 20;
+  const bottomMargin = 10;
 
-  // Título centrado
-  doc.setFontSize(16);
-  const textWidth = doc.getTextWidth(titulo);
-  doc.text(titulo, (pageWidth - textWidth) / 2, 15);
+  const titulo = "Registro y localización de strings";
 
   const columnas = ["Planta", "Combiner", "String", "Fila", "Mesa", "Paneles", "Potencia(W)"];
   const filas = stringsRegistrados
@@ -178,37 +176,47 @@ const exportarPDF = () => {
     )
     .map(s => [s.planta, s.combiner, s.numero, s.fila, s.mesa, s.paneles, s.potencia]);
 
-  // Calcular altura total de la tabla para centrarla verticalmente
-  const rowHeight = 8; // ajusta según fontSize y padding
-  const tableHeight = (filas.length + 1) * rowHeight; // +1 por la cabecera
-  const startY = Math.max((pageHeight - tableHeight) / 2, 20); // mínimo 20 para no tapar el título
+  const fontSize = 10;
+  const estimatedRowHeight = 6;
+  const totalEstimatedHeight = estimatedRowHeight * (filas.length + 1);
+  const fits = totalEstimatedHeight + topMargin + bottomMargin <= pageHeight;
+  const finalFontSize = fits ? fontSize : 9;
 
   autoTable(doc, {
     head: [columnas],
     body: filas,
-    startY,
+    startY: topMargin + 5,
     theme: "grid",
     styles: {
-      fontSize: filas.length > 25 ? 7 : 9, // ajusta para que quepa
+      fontSize: finalFontSize,
       halign: "center",
       valign: "middle",
-      lineWidth: 0.5,
-      lineColor: [0, 0, 0],
       cellPadding: 2,
+      lineColor: [0, 0, 0],       // Negro puro
+      lineWidth: 0.6              // ✅ Más grueso que el default (0.1)
     },
     headStyles: {
+      fontStyle: "bold",
       fillColor: [255, 255, 255],
       textColor: [0, 0, 0],
-      fontStyle: "bold",
     },
     margin: { left: 10, right: 10 },
     tableWidth: "auto",
-    pageBreak: "avoid", // nunca dividir en otra hoja
+    pageBreak: "avoid",
+    didDrawPage: function (data) {
+      doc.setFontSize(16);
+      const textWidth = doc.getTextWidth(titulo);
+      const x = (pageWidth - textWidth) / 2;
+      doc.text(titulo, x, topMargin);
+    }
   });
+
+  if (doc.getNumberOfPages() > 1) {
+    doc.deletePage(2);
+  }
 
   doc.save("registro_strings.pdf");
 };
-
 
    // para descargar el pdf de la tabla de verificacion
 const descargarVerificacionPDF = () => {
